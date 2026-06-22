@@ -182,7 +182,8 @@
         const otroEgreso = parseFloat(document.getElementById('otro_egreso').value) || 0;
         const vImpuesto = parseFloat(document.getElementById('valor_impuesto').value) || 0;
 
-        const subtotal = (vUnitario * cantidad) - otroEgreso;
+        // Modificado para sumar el otro egreso en lugar de restarlo
+        const subtotal = (vUnitario * cantidad) + otroEgreso;
         document.getElementById('subtotal').value = subtotal.toFixed(2);
 
         const total = subtotal + vImpuesto;
