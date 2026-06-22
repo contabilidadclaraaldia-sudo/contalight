@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Egresos Corporativos</title>
+    <style>
+        :root {
+            --primary: #d93025;
+            --primary-hover: #b3241b;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #202124;
+            --border: #dadce0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 40px 20px; /* Incrementado padding para dar aire visual */
+            display: flex; flex-direction: column; /* Alineación de arriba hacia abajo */
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%; max-width: 780px; background: var(--card);
+            padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            box-sizing: border-box;
+            margin-bottom: 20px; /* Separación respecto al pie de página */
+        }
+        h2 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .search-section { background: #fce8e6; padding: 15px; border-radius: 6px; margin-bottom: 25px; border: 1px solid #fad2cf; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 5px; color: #3c4043; font-size: 14px; }
+        input, textarea { padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); }
+        .readonly-field { background-color: #f1f3f4; font-weight: bold; color: #b3241b; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-save { background-color: var(--primary); color: white; }
+        .btn-save:hover { background-color: var(--primary-hover); }
+        .btn-search { background-color: #1a73e8; color: white; }
+        .btn-search:hover { background-color: #1557b0; }
+        .btn-delete { background-color: #5f6368; color: white; display: none; }
+        .btn-delete:hover { background-color: #45484a; }
+        .btn-cancel { background-color: #757575; color: white; display: none; }
+        .btn-cancel:hover { background-color: #5a5a5a; }
+        .row-inline { display: flex; gap: 15px; }
+        .row-inline .form-group { flex: 1; }
+        .status-msg { margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; display: none; }
+
+        /* === ESTILOS PARA EL PIE DE PÁGINA CENTRADO DE SURTECOL === */
+        .surtecol-footer {
+            width: 100%;
+            max-width: 780px; /* Ajustado exactamente al ancho máximo del contenedor de egresos */
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+        .surtecol-footer p {
+            margin: 5px 0;
+            color: #000000;
+        }
+        .surtecol-logo-container {
+            margin-top: 15px;
+        }
+        .surtecol-logo-container img {
+            width: 80px;
+            height: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Control Central de Egresos</h2>
+
+    <div class="search-section">
+        <label style="display:block; margin-bottom: 8px; font-weight: bold; color: #c5221f;">Búsqueda Directa por Número de Factura</label>
+        <div class="form-group">
+            <input type="text" id="buscar_criterio" placeholder="Escribe el No. Factura exacto a consultar...">
+        </div>
+        <button type="button" class="btn-search" onclick="buscarEgreso()" style="width:100%; margin-top:5px;">Consultar Egreso</button>
+    </div>
+
+    <form id="egresosForm">
+        <input type="hidden" id="fila_id" value="">
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="fecha">Fecha Egreso:</label>
+                <input type="date" id="fecha" required>
+            </div>
+            <div class="form-group">
+                <label for="destino">Destino (Análisis):</label>
+                <input type="text" id="destino" required placeholder="Destino del flujo">
+            </div>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="factura">No. FACTURA:</label>
+                <input type="text" id="factura" placeholder="Ej. FAC-5532">
+            </div>
+            <div class="form-group">
+                <label for="nit">NIT PROVEEDOR:</label>
+                <input type="text" id="nit" placeholder="NIT o Cédula Jurídica">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="proveedor">RAZON SOCIAL / PROVEEDOR:</label>
+            <input type="text" id="proveedor" placeholder="Nombre completo del proveedor o comercio">
+        </div>
+
+        <div class="form-group">
+            <label for="descripcion">DESCRIPCION:</label>
+            <textarea id="descripcion" rows="2" placeholder="Describa el concepto detallado del gasto..."></textarea>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="valor_unitario">VALOR UNITARIO ($):</label>
+                <input type="number" id="valor_unitario" step="0.01" min="0" required placeholder="0.00" oninput="calcularFlujoEgresos()">
+            </div>
+            <div class="form-group">
+                <label for="cantidad">CANTIDAD:</label>
+                <input type="number" id="cantidad" min="1" value="1" required oninput="calcularFlujoEgresos()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="otro_egreso">OTRO EGRESO ($):</label>
+            <input type="number" id="otro_egreso" step="0.01" min="0" value="0" oninput="calcularFlujoEgresos()">
+        </div>
+
+        <div class="form-group">
+            <label for="subtotal">SUBTOTAL EGRESO ($):</label>
+            <input type="text" id="subtotal" class="readonly-field" readonly value="0.00">
+        </div>
+
+        <div class="form-group">
+            <label for="valor_impuesto">VALOR IMPUESTO ($):</label>
+            <input type="number" id="valor_impuesto" step="0.01" min="0" value="0" placeholder="Digite el valor directo del impuesto" oninput="calcularFlujoEgresos()">
+        </div>
+
+        <div class="form-group">
+            <label for="total_egreso">TOTAL EGRESO ($):</label>
+            <input type="text" id="total_egreso" class="readonly-field" readonly style="background-color: #fce8e6; color: #c5221f;" value="0.00">
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+
+        <div class="btn-group">
+            <button type="submit" id="btnGuardar" class="btn-save">Registrar Egreso</button>
+            <button type="button" id="btnEliminar" class="btn-delete" onclick="eliminarEgreso()">Eliminar Fila</button>
+            <button type="button" id="btnCancelar" class="btn-cancel" onclick="resetearFormulario()">Cancelar Edición</button>
+        </div>
+    </form>
+</div>
+
+<div class="surtecol-footer">
+    <p style="font-size: 16px;">
+        Este es un desarrollo creado por <strong style="text-decoration: underline;">Surtecol</strong>
+    </p>
+    <p style="font-size: 15px; font-weight: bold;">
+        Tel.: +573188097131 &nbsp;&nbsp;|&nbsp;&nbsp; email: surtecol@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; Colombia
+    </p>
+    <div class="surtecol-logo-container">
+        <img src="logo1.png?v=2" alt="Logo Surtecol" onerror="this.src='logo1.PNG?v=2'" />
+    </div>
+</div>
+
+<script>
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYXLiGKBVqrIGrHJTmz5u6-6t3F8ZhEKsZUj_VZgEhqgOlWQU6rD6zRp4qBFDMXLymjg/exec';
+
+    function calcularFlujoEgresos() {
+        const vUnitario = parseFloat(document.getElementById('valor_unitario').value) || 0;
+        const cantidad = parseFloat(document.getElementById('cantidad').value) || 0;
+        const otroEgreso = parseFloat(document.getElementById('otro_egreso').value) || 0;
+        const vImpuesto = parseFloat(document.getElementById('valor_impuesto').value) || 0;
+
+        const subtotal = (vUnitario * cantidad) - otroEgreso;
+        document.getElementById('subtotal').value = subtotal.toFixed(2);
+
+        const total = subtotal + vImpuesto;
+        document.getElementById('total_egreso').value = total.toFixed(2);
+    }
+
+    document.getElementById('egresosForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        mostrarMensaje('Sincronizando egreso con Google Sheets...', '#ffc107', true);
+
+        const filaId = document.getElementById('fila_id').value;
+        const accion = filaId ? 'editar_borrar' : 'insertar';
+
+        const fechaInput = document.getElementById('fecha').value;
+        const [year, month, day] = fechaInput.split('-');
+        const fechaFormateada = `${day}/${month}/${year}`;
+
+        const datos = {
+            pestaña: 'EGRESOS',
+            accion: accion,
+            fila: filaId,
+            fecha: fechaFormateada,
+            destino: document.getElementById('destino').value,
+            factura: document.getElementById('factura').value,
+            nit: document.getElementById('nit').value,
+            proveedor: document.getElementById('proveedor').value,
+            descripcion: document.getElementById('descripcion').value,
+            valor_unitario: parseFloat(document.getElementById('valor_unitario').value),
+            cantidad: parseInt(document.getElementById('cantidad').value),
+            otro_egreso: parseFloat(document.getElementById('otro_egreso').value),
+            subtotal: parseFloat(document.getElementById('subtotal').value),
+            valor_impuesto: parseFloat(document.getElementById('valor_impuesto').value),
+            total_egreso: parseFloat(document.getElementById('total_egreso').value)
+        };
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            mostrarMensaje('¡Operación de egreso ejecutada exitosamente!', '#1aa260');
+            setTimeout(resetearFormulario, 1500);
+        } catch (error) {
+            mostrarMensaje('Error de enlace: ' + error.message, '#d93025');
+        }
+    });
+
+    async function buscarEgreso() {
+        const criterio = document.getElementById('buscar_criterio').value.trim();
+
+        if (!criterio) return alert('Por favor digite un Número de factura para buscar.');
+
+        mostrarMensaje('Rastreando base de datos corporativa...', '#1a73e8', true);
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ pestaña: 'EGRESOS', accion: 'buscar', buscar_termino: criterio, fecha_inicio: null, fecha_fin: null })
+            });
+
+            const res = await response.json();
+
+            if (res && res.status === 'found') {
+                document.getElementById('fila_id').value = res.fila;
+                document.getElementById('destino').value = res.destino || '';
+                document.getElementById('factura').value = res.factura || '';
+                document.getElementById('nit').value = res.nit || '';
+                document.getElementById('proveedor').value = res.proveedor || '';
+                document.getElementById('descripcion').value = res.descripcion || '';
+                document.getElementById('cantidad').value = res.cantidad || 1;
+                
+                document.getElementById('valor_unitario').value = parseFloat(String(res.valor_unitario).replace(/[^0-9.-]/g, "")) || 0;
+                document.getElementById('otro_egreso').value = parseFloat(String(res.otro_egreso).replace(/[^0-9.-]/g, "")) || 0;
+                document.getElementById('valor_impuesto').value = parseFloat(String(res.valor_impuesto).replace(/[^0-9.-]/g, "")) || 0;
+
+                if (res.fecha) {
+                    const partes = res.fecha.split('T')[0].split('/');
+                    if(partes.length === 3) {
+                        document.getElementById('fecha').value = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+                    }
+                }
+
+                calcularFlujoEgresos();
+
+                document.getElementById('btnGuardar').innerText = 'Actualizar Cambios';
+                document.getElementById('btnEliminar').style.display = 'block';
+                document.getElementById('btnCancelar').style.display = 'block';
+                mostrarMensaje('Egreso localizado y listo para edición.', '#1aa260');
+            } else {
+                mostrarMensaje('No se encontraron registros con ese número de factura.', '#d93025');
+            }
+        } catch (error) {
+            mostrarMensaje('Error en motor de búsqueda: ' + error.message, '#d93025');
+        }
+    }
+
+    async function eliminarEgreso() {
+        if (!confirm('¿Está completamente seguro de eliminar esta fila de egreso?')) return;
+        const filaId = document.getElementById('fila_id').value;
+        mostrarMensaje('Borrando fila del servidor...', '#d93025', true);
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ pestaña: 'EGRESOS', accion: 'editar_borrar', sub_accion: 'borrar', fila: filaId })
+            });
+            mostrarMensaje('Fila eliminada de la base de datos.', '#1aa260');
+            setTimeout(resetearFormulario, 1500);
+        } catch (error) {
+            mostrarMensaje('Error al intentar borrar: ' + error.message, '#d93025');
+        }
+    }
+
+    function resetearFormulario() {
+        document.getElementById('egresosForm').reset();
+        document.getElementById('fila_id').value = '';
+        document.getElementById('cantidad').value = '1';
+        document.getElementById('otro_egreso').value = '0';
+        document.getElementById('subtotal').value = '0.00';
+        document.getElementById('valor_impuesto').value = '0';
+        document.getElementById('total_egreso').value = '0.00';
+        document.getElementById('btnGuardar').innerText = 'Registrar Egreso';
+        document.getElementById('btnEliminar').style.display = 'none';
+        document.getElementById('btnCancelar').style.display = 'none';
+        document.getElementById('statusMsg').style.display = 'none';
+    }
+
+    function mostrarMensaje(texto, color, permanente = false) {
+        const msg = document.getElementById('statusMsg');
+        msg.style.display = 'block';
+        msg.style.backgroundColor = color;
+        msg.style.color = 'white';
+        msg.innerText = texto;
+        if (!permanente) {
+            setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }
+    }
+</script>
+</body>
+</html>

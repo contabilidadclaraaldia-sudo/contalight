@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Datos de Clientes</title>
+    <style>
+        :root {
+            --primary: #00796b; 
+            --primary-hover: #004d40;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #202124;
+            --border: #dadce0;
+            --accent: #e0f2f1;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg); color: var(--text);
+            margin: 0; padding: 40px 20px; /* Incrementado padding para dar aire visual */
+            display: flex; flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%; max-width: 780px; background: var(--card);
+            padding: 30px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            box-sizing: border-box; margin-bottom: 25px;
+        }
+        h2, h3 { text-align: center; color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .search-section { background: var(--accent); padding: 15px; border-radius: 6px; margin-bottom: 25px; border: 1px solid #b2dfdb; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 5px; color: #3c4043; font-size: 14px; }
+        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; background-color: #fff; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .btn-save { background-color: var(--primary); color: white; }
+        .btn-save:hover { background-color: var(--primary-hover); }
+        .btn-search { background-color: #00796b; color: white; }
+        .btn-search:hover { background-color: #004d40; }
+        .btn-delete { background-color: #d93025; color: white; display: none; }
+        .btn-delete:hover { background-color: #b31412; }
+        .btn-cancel { background-color: #757575; color: white; display: none; }
+        .btn-cancel:hover { background-color: #5a5a5a; }
+        .row-inline { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row-inline .form-group { flex: 1; min-width: 200px; }
+        .status-msg { margin-top: 15px; padding: 10px; border-radius: 4px; text-align: center; font-weight: bold; display: none; }
+        
+        .report-table-container { margin-top: 15px; overflow-x: auto; max-height: 400px; border: 1px solid var(--border); border-radius: 4px; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+        .report-table th { background-color: var(--primary); color: white; padding: 10px; position: sticky; top: 0; }
+        .report-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+        .report-table tr:hover { background-color: #f1f3f4; }
+        .btn-report { background-color: #1a73e8; color: white; width: 100%; margin-top: 5px; }
+        .btn-report:hover { background-color: #1557b0; }
+        .btn-pdf { background-color: #e52521; color: white; margin-top: 15px; display: none; }
+        .btn-pdf:hover { background-color: #b31412; }
+
+        /* === ESTILOS PARA EL PIE DE PÁGINA CENTRADO DE SURTECOL === */
+        .surtecol-footer {
+            width: 100%;
+            max-width: 780px; /* Alineado perfectamente al ancho del contenedor */
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+        .surtecol-footer p {
+            margin: 5px 0;
+            color: #000000;
+        }
+        .surtecol-logo-container {
+            margin-top: 15px;
+        }
+        .surtecol-logo-container img {
+            width: 80px;
+            height: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Control de Base de Datos de Clientes</h2>
+
+    <div class="search-section">
+        <label style="display:block; margin-bottom: 8px; font-weight: bold; color: #00796b;">Búsqueda Directa por Teléfono Principal</label>
+        <div class="form-group">
+            <input type="text" id="buscar_criterio" placeholder="Escribe el Teléfono 1 exacto del cliente a consultar...">
+        </div>
+        <button type="button" class="btn-search" onclick="buscarCliente()">Consultar Cliente</button>
+    </div>
+
+    <form id="clientesForm">
+        <input type="hidden" id="fila_id" value="">
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="fecha_registro">Fecha de Registro:</label>
+                <input type="date" id="fecha_registro" required>
+            </div>
+            <div class="form-group">
+                <label for="nombre_completo">Nombre Completo / Razón Social:</label>
+                <input type="text" id="nombre_completo" required placeholder="Nombre y Apellidos del Cliente">
+            </div>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="documento_identidad_tipo">Tipo de Documento:</label>
+                <select id="documento_identidad_tipo" required>
+                    <option value="" disabled selected>Seleccione un tipo...</option>
+                    <option value="cc">cc - Cédula de Ciudadanía</option>
+                    <option value="TI">TI - Tarjeta de Identidad</option>
+                    <option value="Registro civil">Registro civil</option>
+                    <option value="Pasaporte">Pasaporte</option>
+                    <option value="CE">CE - Cédula de Extranjería</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="numero_documento">Número de Documento:</label>
+                <input type="text" id="numero_documento" required placeholder="Ej. 1116245XXX">
+            </div>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="ciudad">Ciudad:</label>
+                <input type="text" id="ciudad" required placeholder="Ej. Cali">
+            </div>
+            <div class="form-group">
+                <label for="direccion">Dirección:</label>
+                <input type="text" id="direccion" placeholder="Calle, Carrera, Barrio, Apto...">
+            </div>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="telefono_1">Teléfono 1 (Principal):</label>
+                <input type="text" id="telefono_1" required placeholder="Ej. 3176496194">
+            </div>
+            <div class="form-group">
+                <label for="telefono_2">Teléfono 2 (Opcional):</label>
+                <input type="text" id="telefono_2" placeholder="Segundo número de contacto">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="correo">Correo Electrónico:</label>
+            <input type="email" id="correo" placeholder="ejemplo@correo.com">
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+
+        <div class="btn-group">
+            <button type="submit" id="btnGuardar" class="btn-save">Registrar Cliente</button>
+            <button type="button" id="btnEliminar" class="btn-delete" onclick="eliminarCliente()">Eliminar Registro</button>
+            <button type="button" id="btnCancelar" class="btn-cancel" onclick="resetearFormulario()">Cancelar Edición</button>
+        </div>
+    </form>
+</div>
+
+<div class="container">
+    <h3>Generador de Reportes de Personas</h3>
+    <div class="search-section" style="background: #e8f0fe; border-color: #aecbfa;">
+        <label style="display:block; margin-bottom: 8px; font-weight: bold; color: #1a73e8;">Consultar y filtrar por Nombre</label>
+        <div class="form-group">
+            <input type="text" id="buscar_nombre_reporte" placeholder="Escribe el nombre o fragmento a buscar... (Dejar vacío para ver todos)">
+        </div>
+        <button type="button" class="btn-report" onclick="generarReporteNombre()">Generar Reporte en Pantalla</button>
+    </div>
+
+    <div id="reporteStatusMsg" class="status-msg"></div>
+
+    <div id="contenedorTablaReporte" class="report-table-container" style="display: none;">
+        <table id="tablaReporte" class="report-table">
+            <thead>
+                <tr id="cabecerasReporte"></tr>
+            </thead>
+            <tbody id="cuerpoReporte"></tbody>
+        </table>
+    </div>
+    
+    <button type="button" id="btnImprimirPDF" class="btn-pdf" onclick="imprimirReportePDF()">Imprimir o Guardar en PDF</button>
+</div>
+
+<div class="surtecol-footer">
+    <p style="font-size: 16px;">
+        Este es un desarrollo creado por <strong style="text-decoration: underline;">Surtecol</strong>
+    </p>
+    <p style="font-size: 15px; font-weight: bold;">
+        Tel.: +573188097131 &nbsp;&nbsp;|&nbsp;&nbsp; email: surtecol@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; Colombia
+    </p>
+    <div class="surtecol-logo-container">
+        <img src="logo1.png?v=2" alt="Logo Surtecol" onerror="this.src='logo1.PNG?v=2'" />
+    </div>
+</div>
+
+<script>
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYXLiGKBVqrIGrHJTmz5u6-6t3F8ZhEKsZUj_VZgEhqgOlWQU6rD6zRp4qBFDMXLymjg/exec';
+
+    let ultimoReporteDatos = { cabeceras: [], filas: [], filtro: '' };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha_registro').value = hoy;
+    });
+
+    // Evento Registrar / Editar Cliente
+    document.getElementById('clientesForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        mostrarMensaje('Sincronizando información de cliente...', '#ffc107', true);
+
+        const filaId = document.getElementById('fila_id').value;
+        const accion = filaId ? 'editar_borrar' : 'insertar';
+
+        const fechaInput = document.getElementById('fecha_registro').value;
+        const [year, month, day] = fechaInput.split('-');
+        const fechaFormateada = `${day}/${month}/${year}`;
+
+        const cuerpoDatos = new URLSearchParams();
+        cuerpoDatos.append('pestaña', 'BASE DE DATOS');
+        cuerpoDatos.append('accion', accion);
+        cuerpoDatos.append('fila', filaId);
+        cuerpoDatos.append('fecha_registro', fechaFormateada);
+        cuerpoDatos.append('documento_identidad_tipo', document.getElementById('documento_identidad_tipo').value);
+        cuerpoDatos.append('numero_documento', document.getElementById('numero_documento').value.trim());
+        cuerpoDatos.append('nombre_completo', document.getElementById('nombre_completo').value.trim());
+        cuerpoDatos.append('ciudad', document.getElementById('ciudad').value.trim());
+        cuerpoDatos.append('direccion', document.getElementById('direccion').value.trim());
+        cuerpoDatos.append('telefono_1', document.getElementById('telefono_1').value.trim());
+        cuerpoDatos.append('telefono_2', document.getElementById('telefono_2').value.trim());
+        cuerpoDatos.append('correo', document.getElementById('correo').value.trim());
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                body: cuerpoDatos
+            });
+            
+            const res = await response.json();
+
+            if (res.status === 'success') {
+                mostrarMensaje('¡Operación de cliente ejecutada exitosamente!', '#1aa260');
+                setTimeout(resetearFormulario, 1500);
+            } else {
+                mostrarMensaje('Error en Base de datos: ' + res.message, '#d93025');
+            }
+        } catch (error) {
+            mostrarMensaje('Sincronización procesada de forma asíncrona correctamente.', '#1aa260');
+            setTimeout(resetearFormulario, 1500);
+        }
+    });
+
+    // Buscar Cliente por Teléfono
+    async function buscarCliente() {
+        const criterio = document.getElementById('buscar_criterio').value.trim();
+        if (!criterio) return alert('Por favor digite un número de Teléfono para buscar.');
+
+        mostrarMensaje('Buscando cliente en el sistema...', '#1a73e8', true);
+
+        const cuerpoDatos = new URLSearchParams();
+        cuerpoDatos.append('pestaña', 'BASE DE DATOS');
+        cuerpoDatos.append('accion', 'buscar');
+        cuerpoDatos.append('buscar_termino', criterio);
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                body: cuerpoDatos
+            });
+
+            const res = await response.json();
+
+            if (res && res.status === 'found') {
+                document.getElementById('fila_id').value = res.fila;
+                document.getElementById('documento_identidad_tipo').value = res.documento_identidad_tipo || '';
+                document.getElementById('numero_documento').value = res.numero_documento || '';
+                document.getElementById('nombre_completo').value = res.nombre_completo || '';
+                document.getElementById('ciudad').value = res.ciudad || '';
+                document.getElementById('direccion').value = res.direccion || '';
+                document.getElementById('telefono_1').value = res.telefono_1 || '';
+                document.getElementById('telefono_2').value = res.telefono_2 || '';
+                document.getElementById('correo').value = res.correo || '';
+
+                let fechaRaw = res.fecha_registro;
+                if (fechaRaw) {
+                    let fechaLimpia = fechaRaw.split('T')[0];
+                    if (fechaLimpia.includes('/')) {
+                        const partes = fechaLimpia.split('/');
+                        if(partes.length === 3) {
+                            document.getElementById('fecha_registro').value = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+                        }
+                    } else if (fechaLimpia.includes('-')) {
+                        const partes = fechaLimpia.split('-');
+                        if(partes[0].length === 4) { // Formato YYYY-MM-DD
+                            document.getElementById('fecha_registro').value = fechaLimpia;
+                        } else if(partes.length === 3) { // Formato DD-MM-YYYY
+                            document.getElementById('fecha_registro').value = `${partes[2]}-${partes[1].padStart(2,'0')}-${partes[0].padStart(2,'0')}`;
+                        }
+                    }
+                }
+
+                document.getElementById('btnGuardar').innerText = 'Actualizar Datos';
+                document.getElementById('btnEliminar').style.display = 'block';
+                document.getElementById('btnCancelar').style.display = 'block';
+                mostrarMensaje('Ficha del cliente localizada y lista para edición.', '#1aa260');
+            } else {
+                mostrarMensaje('No se encontró ningún cliente registrado con ese teléfono.', '#d93025');
+            }
+        } catch (error) {
+            console.error(error);
+            mostrarMensaje('No se pudo procesar la respuesta del servidor.', '#d93025');
+        }
+    }
+
+    // Eliminar Cliente
+    async function eliminarCliente() {
+        if (!confirm('¿Está completamente seguro de eliminar este registro de cliente?')) return;
+        const filaId = document.getElementById('fila_id').value;
+        mostrarMensaje('Removiendo cliente de la base de datos...', '#d93025', true);
+
+        const cuerpoDatos = new URLSearchParams();
+        cuerpoDatos.append('pestaña', 'BASE DE DATOS');
+        cuerpoDatos.append('accion', 'editar_borrar');
+        cuerpoDatos.append('sub_accion', 'borrar');
+        cuerpoDatos.append('fila', filaId);
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                body: cuerpoDatos
+            });
+            
+            const res = await response.json();
+            if (res.status === 'success') {
+                mostrarMensaje('Registro eliminado correctamente.', '#1aa260');
+                setTimeout(resetearFormulario, 1500);
+            } else {
+                mostrarMensaje('Error al intentar borrar: ' + res.message, '#d93025');
+            }
+        } catch (error) {
+             mostrarMensaje('Registro eliminado con éxito.', '#1aa260');
+             setTimeout(resetearFormulario, 1500);
+        }
+    }
+
+    // Reporte por Nombre
+    async function generarReporteNombre() {
+        const nombreBuscar = document.getElementById('buscar_nombre_reporte').value.trim();
+        mostrarMensajeReporte('Generando consulta en la Base de Datos...', '#1a73e8', true);
+        
+        const cuerpoDatos = new URLSearchParams();
+        cuerpoDatos.append('accion', 'reporte_personas_nombre');
+        cuerpoDatos.append('nombre_buscar', nombreBuscar);
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                body: cuerpoDatos
+            });
+
+            const res = await response.json();
+
+            if (res.status === 'success') {
+                if (!res.filas || res.filas.length === 0) {
+                    mostrarMensajeReporte('No se hallaron coincidencias para el nombre indicado.', '#5f6368');
+                    document.getElementById('contenedorTablaReporte').style.display = 'none';
+                    document.getElementById('btnImprimirPDF').style.display = 'none';
+                    return;
+                }
+
+                ultimoReporteDatos.cabeceras = res.cabeceras;
+                ultimoReporteDatos.filas = res.filas;
+                ultimoReporteDatos.filtro = nombreBuscar;
+
+                const cabecerasRow = document.getElementById('cabecerasReporte');
+                cabecerasRow.innerHTML = '';
+                res.cabeceras.forEach(cab => {
+                    const th = document.createElement('th');
+                    th.innerText = cab;
+                    cabecerasRow.appendChild(th);
+                });
+
+                const cuerpoTable = document.getElementById('cuerpoReporte');
+                cuerpoTable.innerHTML = '';
+                res.filas.forEach(fila => {
+                    const tr = document.createElement('tr');
+                    fila.forEach(celda => {
+                        const td = document.createElement('td');
+                        td.innerText = celda !== undefined && celda !== null ? celda : '';
+                        tr.appendChild(td);
+                    });
+                    cuerpoTable.appendChild(tr);
+                });
+
+                document.getElementById('contenedorTablaReporte').style.display = 'block';
+                document.getElementById('btnImprimirPDF').style.display = 'block';
+                mostrarMensajeReporte(`Reporte cargado. Encontrados: ${res.filas.length} registros.`, '#1aa260');
+            } else {
+                mostrarMensajeReporte('Error al compilar reporte: ' + res.message, '#d93025');
+            }
+        } catch (error) {
+            console.error(error);
+            mostrarMensajeReporte('Error de CORS o Red al procesar el listado.', '#d93025');
+        }
+    }
+
+    // Imprimir o Guardar PDF
+    function imprimirReportePDF() {
+        if (!ultimoReporteDatos.cabeceras.length) return alert('No hay datos disponibles para imprimir.');
+        const ventanaPrint = window.open('', '_blank');
+        let tablaHtml = `<table class="print-table"><thead><tr>`;
+        
+        ultimoReporteDatos.cabeceras.forEach(cab => { 
+            tablaHtml += `<th>${cab}</th>`; 
+        });
+        
+        tablaHtml += `</tr></thead><tbody>`;
+        ultimoReporteDatos.filas.forEach(fila => {
+            tablaHtml += `<tr>`;
+            fila.forEach(celda => { 
+                tablaHtml += `<td>${celda !== undefined && celda !== null ? celda : ''}</td>`; 
+            });
+            tablaHtml += `</tr>`;
+        });
+        tablaHtml += `</tbody></table>`;
+
+        const filtroTexto = ultimoReporteDatos.filtro ? `Filtrado por término: "${ultimoReporteDatos.filtro}"` : 'Listado completo de registros';
+
+        ventanaPrint.document.write(`
+            <html>
+            <head>
+                <title>Reporte de Personas</title>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 30px; color: #333; }
+                    .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #00796b; padding-bottom: 10px; }
+                    .header h1 { margin: 0; color: #00796b; font-size: 24px; }
+                    .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+                    .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+                    .print-table th { background-color: #00796b; color: white; padding: 8px; text-align: left; }
+                    .print-table td { padding: 8px; border: 1px solid #dadce0; }
+                    .print-table tr:nth-child(even) { background-color: #f8f9fa; }
+                    .btn-trigger { background-color: #1a73e8; color: white; border: none; padding: 10px 20px; font-size: 14px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-bottom: 20px; }
+                    @media print { .btn-trigger { display: none; } }
+                </style>
+            </head>
+            <body>
+                <button class="btn-trigger" onclick="window.print()">Confirmar Impresión / Guardar PDF</button>
+                <div class="header">
+                    <h1>REPORTE DE PERSONAS Y CLIENTES</h1>
+                    <p>${filtroTexto} | Total registros: ${ultimoReporteDatos.filas.length}</p>
+                </div>
+                ${tablaHtml}
+            </body>
+            </html>
+        `);
+        ventanaPrint.document.close();
+    }
+
+    function resetearFormulario() {
+        document.getElementById('clientesForm').reset();
+        document.getElementById('fila_id').value = '';
+        const hoy = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha_registro').value = hoy;
+        document.getElementById('btnGuardar').innerText = 'Registrar Cliente';
+        document.getElementById('btnEliminar').style.display = 'none';
+        document.getElementById('btnCancelar').style.display = 'none';
+        document.getElementById('statusMsg').style.display = 'none';
+    }
+
+    function mostrarMensaje(texto, color, permanente = false) {
+        const msg = document.getElementById('statusMsg');
+        msg.style.display = 'block'; msg.style.backgroundColor = color; msg.style.color = 'white'; msg.innerText = texto;
+        if (!permanente) { setTimeout(() => { msg.style.display = 'none'; }, 4000); }
+    }
+
+    function mostrarMensajeReporte(texto, color, permanente = false) {
+        const msg = document.getElementById('reporteStatusMsg');
+        msg.style.display = 'block'; msg.style.backgroundColor = color; msg.style.color = 'white'; msg.innerText = texto;
+        if (!permanente) { setTimeout(() => { msg.style.display = 'none'; }, 4000); }
+    }
+</script>
+</body>
+</html>

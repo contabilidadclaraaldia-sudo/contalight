@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Presupuestos direct-to-Sheets</title>
+    <style>
+        :root {
+            --primary: #107c41;
+            --primary-hover: #0b592e;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #333333;
+            --border: #cccccc;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px; /* Incrementado para dar aire arriba y abajo */
+            display: flex;
+            flex-direction: column; /* Alineación vertical de arriba hacia abajo */
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+            margin-bottom: 20px; /* Separación respecto al pie de página */
+        }
+        h2 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 10px;
+        }
+        .search-section {
+            background: #eef7ed;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border: 1px solid #c3e6cb;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, textarea {
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .readonly-field {
+            background-color: #e9ecef;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-save { background-color: var(--primary); color: white; }
+        .btn-save:hover { background-color: var(--primary-hover); }
+        .btn-search { background-color: #007bff; color: white; }
+        .btn-search:hover { background-color: #0056b3; }
+        .btn-delete { background-color: #dc3545; color: white; display: none; }
+        .btn-delete:hover { background-color: #bd2130; }
+        .btn-cancel { background-color: #6c757d; color: white; display: none; }
+        .btn-cancel:hover { background-color: #5a6268; }
+        .row-inline {
+            display: flex;
+            gap: 15px;
+        }
+        .row-inline .form-group {
+            flex: 1;
+        }
+        .status-msg {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* === ESTILOS PARA EL PIE DE PÁGINA CENTRADO DE SURTECOL === */
+        .surtecol-footer {
+            width: 100%;
+            max-width: 700px; /* Ajustado al mismo ancho máximo del contenedor del formulario */
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+        .surtecol-footer p {
+            margin: 5px 0;
+            color: #000000;
+        }
+        .surtecol-logo-container {
+            margin-top: 15px;
+        }
+        .surtecol-logo-container img {
+            width: 80px;
+            height: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Control de Presupuestos</h2>
+
+    <div class="search-section">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="buscar_destino">Buscar Análisis por Destino:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="buscar_destino" style="flex: 1;" placeholder="Escribe el destino a buscar...">
+                <button type="button" class="btn-search" onclick="buscarDestino()">Buscar</button>
+            </div>
+        </div>
+    </div>
+
+    <form id="presupuestoForm">
+        <input type="hidden" id="fila_id" value="">
+
+        <div class="form-group">
+            <label for="destino">Destino (Nombre del Análisis):</label>
+            <input type="text" id="destino" required placeholder="Ej. Análisis Estructural">
+        </div>
+
+        <div class="form-group">
+            <label for="fecha">Fecha Análisis:</label>
+            <input type="date" id="fecha" required>
+        </div>
+
+        <div class="form-group">
+            <label for="descripcion">Descripción Costos:</label>
+            <textarea id="descripcion" rows="3" required placeholder="Detalles de costos..."></textarea>
+        </div>
+
+        <div class="row-inline">
+            <div class="form-group">
+                <label for="costos">Costos ($):</label>
+                <input type="number" id="costos" step="0.01" min="0" required placeholder="0.00" oninput="calcularCobro()">
+            </div>
+
+            <div class="form-group">
+                <label for="margen">Margen Deseado (%):</label>
+                <input type="number" id="margen" step="0.1" min="0" max="99.9" required placeholder="Ej. 20" oninput="calcularCobro()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cobro">Cobro Proyectado por Persona ($):</label>
+            <input type="text" id="cobro" class="readonly-field" readonly value="0.00">
+        </div>
+
+        <div id="statusMsg" class="status-msg"></div>
+
+        <div class="btn-group">
+            <button type="submit" id="btnGuardar" class="btn-save">Guardar Registro</button>
+            <button type="button" id="btnEliminar" class="btn-delete" onclick="eliminarRegistro()">Borrar</button>
+            <button type="button" id="btnCancelar" class="btn-cancel" onclick="resetearFormulario()">Cancel Edición</button>
+        </div>
+    </form>
+</div>
+
+<!-- Pie de página de Surtecol perfectamente posicionado abajo y centrado -->
+<div class="surtecol-footer">
+    <p style="font-size: 16px;">
+        Este es un desarrollo creado por <strong style="text-decoration: underline;">Surtecol</strong>
+    </p>
+    <p style="font-size: 15px; font-weight: bold;">
+        Tel.: +573188097131 &nbsp;&nbsp;|&nbsp;&nbsp; email: surtecol@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; Colombia
+    </p>
+    <div class="surtecol-logo-container">
+        <img src="logo1.png?v=2" alt="Logo Surtecol" onerror="this.src='logo1.PNG?v=2'" />
+    </div>
+</div>
+
+<script>
+    // URL DEL WEB APP GENERADA EN GOOGLE APPS SCRIPT
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYXLiGKBVqrIGrHJTmz5u6-6t3F8ZhEKsZUj_VZgEhqgOlWQU6rD6zRp4qBFDMXLymjg/exec';
+
+    function calcularCobro() {
+        const costos = parseFloat(document.getElementById('costos').value) || 0;
+        const margenPorcentaje = parseFloat(document.getElementById('margen').value) || 0;
+
+        if (margenPorcentaje >= 100) {
+            document.getElementById('cobro').value = "Margen inválido";
+            return;
+        }
+
+        const margenDecimal = margenPorcentaje / 100;
+        const cobroProyectado = costos / (1 - margenDecimal);
+        document.getElementById('cobro').value = costos > 0 ? cobroProyectado.toFixed(2) : "0.00";
+    }
+
+    // Insertar o Editar
+    document.getElementById('presupuestoForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        mostrarMensaje('Guardando datos en Google Sheets...', '#ffc107', true);
+
+        const filaId = document.getElementById('fila_id').value;
+        const accion = filaId ? 'editar_borrar' : 'insertar';
+
+        const fechaInput = document.getElementById('fecha').value;
+        const [year, month, day] = fechaInput.split('-');
+        const fechaFormateada = `${day}/${month}/${year}`;
+
+        const datos = {
+            pestaña: 'PRESUPUESTOS',
+            accion: accion,
+            fila: filaId,
+            destino: document.getElementById('destino').value,
+            fecha: fechaFormateada,
+            descripcion: document.getElementById('descripcion').value,
+            costos: parseFloat(document.getElementById('costos').value),
+            margen: parseFloat(document.getElementById('margen').value) / 100,
+            cobro: parseFloat(document.getElementById('cobro').value)
+        };
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            mostrarMensaje('¡Operación procesada con éxito en la Hoja!', '#28a745');
+            setTimeout(resetearFormulario, 1500);
+
+        } catch (error) {
+            mostrarMensaje('Error de red: ' + error.message, '#dc3545');
+        }
+    });
+
+    // Buscar Destino
+    async function buscarDestino() {
+        const termino = document.getElementById('buscar_destino').value;
+        if (!termino) return alert('Ingresa un término de búsqueda');
+
+        mostrarMensaje('Buscando en la base de datos...', '#007bff', true);
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ accion: 'buscar', destino_buscar: termino })
+            });
+
+            const resultado = await response.json();
+            
+            if (resultado && resultado.status === 'found') {
+                document.getElementById('fila_id').value = resultado.fila;
+                document.getElementById('destino').value = resultado.destino;
+                document.getElementById('descripcion').value = resultado.descripcion;
+                
+                const costoLimpio = String(resultado.costos).replace(/[^0-9.-]/g, "");
+                const margenLimpio = String(resultado.margen).replace(/[^0-9.-]/g, "");
+                
+                document.getElementById('costos').value = parseFloat(costoLimpio) || 0;
+                document.getElementById('margen').value = (parseFloat(margenLimpio) < 1 ? parseFloat(margenLimpio) * 100 : parseFloat(margenLimpio)) || 0;
+
+                if(resultado.fecha) {
+                    const fechaStr = resultado.fecha.split('T')[0];
+                    const partes = fechaStr.includes('/') ? fechaStr.split('/') : fechaStr.split('-');
+                    if(partes.length === 3) {
+                        const a = partes[0].length === 4 ? partes[0] : partes[2];
+                        const m = partes[0].length === 4 ? partes[1] : partes[1];
+                        const d = partes[0].length === 4 ? partes[2] : partes[0];
+                        document.getElementById('fecha').value = `${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                    }
+                }
+
+                calcularCobro();
+
+                document.getElementById('btnGuardar').innerText = 'Actualizar Registro';
+                document.getElementById('btnEliminar').style.display = 'block';
+                document.getElementById('btnCancelar').style.display = 'block';
+                mostrarMensaje('Registro cargado. Puedes editarlo o borrarlo.', '#28a745');
+            } else {
+                mostrarMensaje('No se encontró ningún análisis con ese destino.', '#dc3545');
+            }
+        } catch (error) {
+            mostrarMensaje('Error al buscar: ' + error.message, '#dc3545');
+        }
+    }
+
+    // Eliminar Registro
+    async function eliminarRegistro() {
+        if (!confirm('¿Seguro que deseas borrar este análisis?')) return;
+        
+        const filaId = document.getElementById('fila_id').value;
+        mostrarMensaje('Borrando fila...', '#dc3545', true);
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({ accion: 'editar_borrar', sub_accion: 'borrar', fila: filaId })
+            });
+
+            mostrarMensaje('Registro eliminado con éxito.', '#28a745');
+            setTimeout(resetearFormulario, 1500);
+        } catch (error) {
+            mostrarMensaje('Error al eliminar: ' + error.message, '#dc3545');
+        }
+    }
+
+    function resetearFormulario() {
+        document.getElementById('presupuestoForm').reset();
+        document.getElementById('fila_id').value = '';
+        document.getElementById('btnGuardar').innerText = 'Guardar Registro';
+        document.getElementById('btnEliminar').style.display = 'none';
+        document.getElementById('btnCancelar').style.display = 'none';
+        document.getElementById('statusMsg').style.display = 'none';
+    }
+
+    function mostrarMensaje(texto, color, permanente = false) {
+        const msg = document.getElementById('statusMsg');
+        msg.style.display = 'block';
+        msg.style.backgroundColor = color;
+        msg.style.color = 'white';
+        msg.innerText = texto;
+        if (!permanente) {
+            setTimeout(() => { msg.style.display = 'none'; }, 4000);
+        }
+    }
+</script>
+</body>
+</html>

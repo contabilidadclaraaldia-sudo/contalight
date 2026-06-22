@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control Contable</title>
+    <style>
+        :root {
+            --bg: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #202124;
+            --text-sub: #5f6368;
+            --border: #dadce0;
+            
+            /* Colores de identidad para cada sección */
+            --color-presupuesto: #1a73e8; /* Azul */
+            --color-ingresos: #1aa260;    /* Verde */
+            --color-egresos: #d93025;     /* Rojo */
+            --color-informes: #673ab7;    /* Violeta */
+            --color-ejercicio: #e67e22;   /* Naranja/Dorado */
+            --color-basedatos: #00796b;   /* Teal / Azul Profundo Corporativo */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 0; /* Espacio arriba y abajo en la pantalla */
+            display: flex;
+            flex-direction: column; /* Obliga a que todo se alinee verticalmente de arriba a abajo */
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .menu-container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            text-align: center;
+            box-sizing: border-box;
+            margin: 0 auto 20px auto; /* Centrado horizontal y margen inferior */
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1f2937;
+        }
+
+        p.subtitle {
+            font-size: 14px;
+            color: var(--text-sub);
+            margin-bottom: 35px;
+        }
+
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .menu-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(0.9);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Asignación de colores específicos */
+        .btn-presupuesto { background-color: var(--color-presupuesto); }
+        .btn-ingresos { background-color: var(--color-ingresos); }
+        .btn-egresos { background-color: var(--color-egresos); }
+        .btn-informes { background-color: var(--color-informes); }
+        .btn-ejercicio { background-color: var(--color-ejercicio); }
+        .btn-basedatos { background-color: var(--color-basedatos); }
+
+        /* Footer discreto original del contenedor */
+        .footer-credit {
+            margin-top: 35px;
+            font-size: 11px;
+            color: var(--text-sub);
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+        }
+
+        /* === ESTILOS PARA EL PIE DE PÁGINA CENTRADO === */
+        .surtecol-footer {
+            width: 100%;
+            max-width: 500px; /* Alínea el ancho con el contenedor del formulario */
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            box-sizing: border-box;
+        }
+
+        .surtecol-footer p {
+            margin: 5px 0;
+            color: #000000;
+        }
+
+        .surtecol-logo-container {
+            margin-top: 15px;
+        }
+
+        .surtecol-logo-container img {
+            width: 80px; /* Tamaño optimizado para el isotipo de Surtecol */
+            height: auto;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="menu-container">
+    <h1>Sistema de Gestión Financiera</h1>
+    <p class="subtitle">Selecciona el módulo contable que deseas operar:</p>
+
+    <div class="menu-grid">
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/index.html" target="_blank" class="menu-btn btn-presupuesto">
+            📊 PROYECCIÓN DE PRESUPUESTO
+        </a>
+
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/ingresos.html" target="_blank" class="menu-btn btn-ingresos">
+            💰 REGISTRO DE INGRESOS
+        </a>
+
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/egresos.html" target="_blank" class="menu-btn btn-egresos">
+            📉 REGISTRO DE EGRESOS
+        </a>
+
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/basedatos.html" target="_blank" class="menu-btn btn-basedatos">
+            👥 BASE DE DATOS CLIENTES
+        </a>
+
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/informes.html" target="_blank" class="menu-btn btn-informes">
+            📋 GENERADOR DE INFORMES (PDF)
+        </a>
+
+        <a href="https://contabilidadclaraaldia-sudo.github.io/contabilidad-/ejercicio.html" target="_blank" class="menu-btn btn-ejercicio">
+            ⚖️ RESULTADO DEL EJERCICIO
+        </a>
+    </div>
+
+    <div class="footer-credit">
+        Consolidado de Contabilidad Clara al Día • Conexión Segura Cloud
+    </div>
+</div>
+
+<div class="surtecol-footer">
+    <p style="font-size: 16px;">
+        Este es un desarrollo creado por <strong style="text-decoration: underline;">Surtecol</strong>
+    </p>
+    <p style="font-size: 15px; font-weight: bold;">
+        Tel.: +573188097131 &nbsp;&nbsp;|&nbsp;&nbsp; email: surtecol@gmail.com &nbsp;&nbsp;|&nbsp;&nbsp; Colombia
+    </p>
+    <div class="surtecol-logo-container">
+        <img src="logo1.png?v=2" alt="Logo Surtecol" onerror="this.src='logo1.PNG?v=2'" />
+    </div>
+</div>
+
+</body>
+</html>
