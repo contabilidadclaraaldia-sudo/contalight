@@ -36,13 +36,12 @@
             position: relative;
         }
 
-        /* === CONTENEDOR DE DATOS (RAZÓN SOCIAL Y FECHA) === */
+        /* === CONTENEDOR DE DATOS - AHORA CENTRADO === */
         .info-header {
             width: 100%;
             max-width: 500px;
-            text-align: left;
+            text-align: center; /* Cambio clave: Centrado con respecto al menú */
             margin: 0 auto 15px auto;
-            padding-left: 5px;
             box-sizing: border-box;
         }
 
@@ -215,7 +214,6 @@
 <script>
     // 1. LÓGICA PARA OBTENER LA RAZÓN SOCIAL DESDE GOOGLE SHEETS (CELDA B3)
     async function obtenerRazonSocial() {
-        // URL de exportación en formato CSV apuntando específicamente a la hoja MENU (gid=1296639800) rango B3:B3
         const spreadsheetId = '1uYO8XLyDLPoub6RpK7wA8TpAaN1X7zwnnqLf1ito6os';
         const gid = '1296639800';
         const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&id=${spreadsheetId}&gid=${gid}&range=B3`;
@@ -225,13 +223,12 @@
             if (!respuesta.ok) throw new Error('Error al conectar con la hoja de cálculo');
             const texto = await respuesta.text();
             
-            // Limpiar comillas extras del formato CSV si existieran
             const razonSocial = texto.replace(/^"|"$/g, '').trim();
             
             if (razonSocial) {
                 document.getElementById('razonSocialLabel').textContent = razonSocial;
             } else {
-                document.getElementById('razonSocialLabel').textContent = 'Surtecol S.A'; // Fallback por defecto
+                document.getElementById('razonSocialLabel').textContent = 'Surtecol S.A';
             }
         } catch (error) {
             console.error('Error obteniendo la Razón Social:', error);
@@ -243,13 +240,13 @@
     function establecerFechaActual() {
         const hoy = new Date();
         const dia = String(hoy.getDate()).padStart(2, '0');
-        const mes = String(hoy.getMonth() + 1).padStart(2, '0'); // Los meses en JavaScript van de 0 a 11
+        const mes = String(hoy.getMonth() + 1).padStart(2, '0');
         const anio = hoy.getFullYear();
         
         document.getElementById('fechaLabel').textContent = `${dia}/${mes}/${anio}`;
     }
 
-    // Ejecutar las funciones al cargar la página por completo
+    // Ejecutar las funciones al cargar la página
     window.addEventListener('DOMContentLoaded', () => {
         establecerFechaActual();
         obtenerRazonSocial();
